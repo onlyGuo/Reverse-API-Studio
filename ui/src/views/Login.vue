@@ -44,6 +44,8 @@
 </template>
 
 <script>
+import Axios from "axios";
+
 export default {
   name: "Login",
   data(){
@@ -78,10 +80,17 @@ export default {
       this.bgLocation.y = 0;
     },
     login(){
-      this.$fvite.post('api/v1/user/login', this.loginForm).then(res => {
-        localStorage.setItem('login-info', JSON.stringify(res.responseBody));
+
+      // this.$fvite.post('api/v1/user/login', this.loginForm).then(res => {
+      //   localStorage.setItem('login-info', JSON.stringify(res.responseBody));
+      //   this.$router.replace({
+      //     path: '/projects'
+      //   })
+      // })
+      Axios.post('/api/v1/user/login', this.loginForm).then(res => {
+        localStorage.setItem('login-info', JSON.stringify(res));
         this.$router.replace({
-          path: '/projects'
+          path: '/development'
         })
       })
     }

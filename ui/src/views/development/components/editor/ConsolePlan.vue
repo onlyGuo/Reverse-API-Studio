@@ -34,9 +34,9 @@ export default {
     this.$refs.box.addEventListener('onresize', this.resize);
   },
   unmounted() {
-    if(this.websocket !== null){
-      this.websocket.close();
-    }
+    // if(this.websocket !== null){
+    //   this.websocket.close();
+    // }
   },
   methods: {
     initWebSocket(){
@@ -72,7 +72,7 @@ export default {
       }
     },
     onopen(event) {
-      this.websocket.send("open");
+      // this.websocket.send("open");
     },
     onerror(event) {
       this.reconnect();

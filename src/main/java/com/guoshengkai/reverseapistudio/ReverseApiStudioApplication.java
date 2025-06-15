@@ -12,5 +12,4 @@ public class ReverseApiStudioApplication {
     public static void main(String[] args) {
         SpringApplication.run(ReverseApiStudioApplication.class, args);
     }
-
 }

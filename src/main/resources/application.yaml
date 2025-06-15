@@ -14,3 +14,6 @@ spring:
       port: ${ENV.REDIS.PORT:6379}
       password: guoshengkai373
       database: 4
+user:
+  password: ${ENV.USER.PASSWORD:admin}
+  username: ${ENV.USER.USERNAME:admin}

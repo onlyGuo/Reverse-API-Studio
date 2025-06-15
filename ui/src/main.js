@@ -78,11 +78,14 @@ app.config.globalProperties.$fvite = reactive({
         return Axios.post('/fvite/request?uri=' + encodeURIComponent(uri) + '&method=GET&token=' + login?.token, {});
     },
     post(uri, data){
+        debugger
+        console.log(data)
         let login = localStorage.getItem('login-info')
-        if(null != login){
+        if(null != login && 'undefined' !== login){
             login = JSON.parse(login)
         }
-        return Axios.post('/fvite/request?uri=' + encodeURIComponent(uri) + '&method=POST&token=' + login?.token, data);
+        return Axios.post(uri, data)
+        // return Axios.post('/fvite/request?uri=' + encodeURIComponent(uri) + '&method=POST&token=' + login?.token, data);
     }
 });
 

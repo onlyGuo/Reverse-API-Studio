@@ -1,5 +1,5 @@
 package com.guoshengkai.reverseapistudio.utils.script;
 
-public interface Util {
+public class Util {
 
 }

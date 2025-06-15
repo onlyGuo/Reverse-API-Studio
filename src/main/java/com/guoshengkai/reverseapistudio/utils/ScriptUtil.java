@@ -2,7 +2,9 @@ package com.guoshengkai.reverseapistudio.utils;
 
 
 import com.guoshengkai.reverseapistudio.utils.script.Util;
+import lombok.SneakyThrows;
 import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
 
 import java.io.File;
@@ -53,11 +55,14 @@ public class ScriptUtil {
     }
 
 
+    @SneakyThrows
     public static Object execute(File file, Object... params){
+        List<Class<?>> finalAllowClasses = new ArrayList<>(ALLOW_CLASSES);
+        finalAllowClasses.addAll(STATIC_CLASSES);
         try (Context context = Context.newBuilder("js").allowAllAccess(true)
-                .currentWorkingDirectory(file.getParentFile().toPath())
+                .currentWorkingDirectory(file.getParentFile().getAbsoluteFile().toPath())
                 .allowHostClassLookup(s -> {
-                    for (Class<?> aClass : ALLOW_CLASSES) {
+                    for (Class<?> aClass : finalAllowClasses) {
                         if (aClass.getName().equals(s)) {
                             return true;
                         }
@@ -68,7 +73,7 @@ public class ScriptUtil {
                 context.getBindings("js").putMember(clazz.getSimpleName(),
                         context.eval("js", "Java.type('" + clazz.getName() + "')"));
             });
-            Value js = context.eval("js", "import api from '" + file.getName() + "'; api");
+            Value js = context.eval(Source.newBuilder("js", file).mimeType("application/javascript+module").build());
             return js.execute(params);
         }
     }
