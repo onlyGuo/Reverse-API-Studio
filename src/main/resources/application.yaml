@@ -1,0 +1,16 @@
+server:
+  port: 8081
+spring:
+  application:
+    name: Reverse-API-Studio
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    password: guoshengkai373
+    url: jdbc:mysql://${ENV.DATABASE.URL:172.17.0.1:3306}/${ENV.DATABASE.NAME:reverse_api_studio}?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true
+  data:
+    redis:
+      host: ${ENV.REDIS.HOST:172.17.0.1}
+      port: ${ENV.REDIS.PORT:6379}
+      password: guoshengkai373
+      database: 4
