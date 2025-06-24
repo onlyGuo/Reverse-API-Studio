@@ -4,10 +4,12 @@ import com.alibaba.fastjson.JSON;
 import com.guoshengkai.reverseapistudio.Common;
 import com.guoshengkai.reverseapistudio.core.entity.ApiEndpoint;
 import com.guoshengkai.reverseapistudio.utils.ScriptUtil;
+import lombok.Getter;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
+import org.graalvm.polyglot.proxy.Proxy;
 import org.springframework.util.StringUtils;
 
 import java.io.File;
@@ -24,29 +26,23 @@ import java.util.*;
  */
 public class EndpointContainer {
 
+    @Getter
     private List<ApiEndpoint> endpoints = new LinkedList<>();
 
+    /**
+     * 存储端点的唯一标识符和 ApiEndpoint 对象的映射
+     */
     private Map<String, ApiEndpoint> endpointsMap = new HashMap<>();
 
+    /**
+     * 存储端点路径和模型名称的映射
+     * 例如：{"/api/v1": {"model1": [ApiEndpoint1, ApiEndpoint2], "model2": [ApiEndpoint3]}}
+     */
     private Map<String, Map<String, List<ApiEndpoint>>> endpointMap = new HashMap<>();
-
-    private Engine engine = null;
-    private Map<String, String> options = new HashMap<>();
 
     private String modelName;
 
     public EndpointContainer(String modelName) {
-        System.setProperty("polyglot.engine.WarnInterpreterOnly", "false");
-
-        // Enable CommonJS experimental support.
-        options.put("js.commonjs-require", "true");
-        // (optional) folder where the NPM modules to be loaded are located.
-        options.put("js.commonjs-require-cwd", new File(Common.STORE_PATH, "0").getAbsolutePath());
-
-        engine = Engine.newBuilder()
-                .allowExperimentalOptions(true)
-                .options(options)
-                .build();
         this.modelName = modelName;
     }
 
@@ -71,41 +67,6 @@ public class EndpointContainer {
         endpointsMap.clear();
         endpoints.clear();
         endpointMap.clear();
-        if (engine != null) {
-            engine.close();
-            engine = null;
-        }
-        options.clear();
-    }
-
-    public void loadEndpoint(ApiEndpoint endpoint) {
-        if (!endpointsMap.containsKey(endpoint.getKey())) {
-            endpointsMap.put(endpoint.getKey(), endpoint);
-            endpoints.add(endpoint);
-
-            // 读文件详情 TODO 需要JS引擎
-            try(Context context = Context.newBuilder()
-                    .allowAllAccess(true)
-                    .engine(engine)
-                    .options(options)
-                    .allowExperimentalOptions(true)
-                    .allowIO(true)
-                    .currentWorkingDirectory(Path.of(new File(new File(Common.STORE_PATH, "0"),
-                            modelName).toURI()))
-                    .build()) {
-                String path = endpoint.getKey()
-                        .replace("//", "./").replace("./", "");
-                Source js = Source.newBuilder("js",
-                        String.format("import api from '%s'; api", path),
-                        path.replace("./", "")
-                ).mimeType("application/javascript+module").build();
-                Value eval = context.eval(js);
-                System.out.println(JSON.toJSONString(eval.as(Object.class)));
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
-
     }
 
     public void load() {
@@ -131,11 +92,43 @@ public class EndpointContainer {
             if (fileDir.isDirectory()) {
                 load(fileDir.getName());
             }else if (fileDir.getName().endsWith(".mjs")) {
-                ApiEndpoint apiEndpoint = new ApiEndpoint();
-                apiEndpoint.setKey(path + "/" + fileDir.getName());
-                Object execute = ScriptUtil.execute(fileDir);
-                System.out.println(execute);
+                loadFile(fileDir);
             }
         }
     }
+
+    public void loadFile(File fileDir){
+        ApiEndpoint apiEndpoint = new ApiEndpoint();
+        File file = new File(modelName, "apis");
+        String[] split = fileDir.getPath().split(file.getPath());
+        apiEndpoint.setKey("//" + new File(file, split[1]).getPath());
+        ScriptUtil.execute(fileDir, (js, args) -> {
+            js = js.getMember("default");
+            apiEndpoint.setWidget(js.getMember("widget").asInt());
+            apiEndpoint.setPath(js.getMember("path").asString());
+            if (!apiEndpoint.getPath().startsWith("/")) {
+                apiEndpoint.setPath("/" + apiEndpoint.getPath());
+            }
+            apiEndpoint.setModel(js.getMember("model").asString());
+            return apiEndpoint;
+        });
+        System.out.println(apiEndpoint);
+        endpoints.add(apiEndpoint);
+        endpointsMap.put(apiEndpoint.getKey(), apiEndpoint);
+        endpointMap.computeIfAbsent(apiEndpoint.getPath(), k -> new HashMap<>())
+                .computeIfAbsent(apiEndpoint.getModel(), k -> new ArrayList<>())
+                .add(apiEndpoint);
+    }
+
+    public List<ApiEndpoint> getEndpointsByPath(String path, String model) {
+        if (!endpointMap.containsKey(path)) {
+            return Collections.emptyList();
+        }
+        Map<String, List<ApiEndpoint>> modelEndpoints = endpointMap.get(path);
+        if (!modelEndpoints.containsKey(model)) {
+            return Collections.emptyList();
+        }
+        return modelEndpoints.get(model);
+    }
+
 }

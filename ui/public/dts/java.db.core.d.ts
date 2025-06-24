@@ -242,6 +242,17 @@ declare class FileUrl {
  * 模型参数选项
  */
 declare class ModelOption {
+
+    /**
+     * 是否使用流式生成文本
+     */
+    stream: boolean;
+
+    /**
+     * 模型名称, 与模型API端点的model属性对应
+     */
+    model: string;
+
     /**
      * 生成文本的温度，范围是0到1
      * @default 0.7
@@ -296,3 +307,37 @@ declare class ModelOption {
      */
     return_usage?: boolean;
 }
+
+/**
+ * 模型API属性信息
+ */
+declare interface ModelApiAttribute {
+    /**
+     * 监听的模型名称
+     */
+    model: string;
+    /**
+     * 监听的API端点路径
+     */
+    path: string;
+    /**
+     * 权重, 相同API路径和模型名称的API端点下, 权重值越大, 优先级越高, 当权重<= 0时, 该API端点不参与模型API的调用
+     */
+    widget: number;
+    /**
+     * API 端点的服务方法
+     * @param messages
+     *      接收到的消息列表
+     * @param option
+     *      接收到的模型参数选项
+     */
+    service: (messages: Message[], option: ModelOption) => void;
+}
+
+/**
+ * 模型API端点
+ */
+declare class ApiEndpoint {
+    constructor(attribute: ModelApiAttribute);
+}
+

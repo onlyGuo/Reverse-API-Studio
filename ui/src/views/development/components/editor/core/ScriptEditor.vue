@@ -114,7 +114,8 @@ export default {
     initEditor: function (reloadCode) {
       monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
         noSemanticValidation: false,
-        noSyntaxValidation: false
+        noSyntaxValidation: false,
+        checkJs: true
       });
       monaco.languages.typescript.javascriptDefaults.setCompilerOptions({
         target: monaco.languages.typescript.ScriptTarget.ES2016,
@@ -152,14 +153,19 @@ export default {
       if(!this.editor){
         this.editor = monaco.editor.create(this.$refs.container, editorConf);
       }
-      let iTextModel = monaco.editor.getModel(Uri.parse(this.item.key));
+      const cleanKey = this.item.key.replace(/^\/+/, ''); // 去掉前缀所有斜杠
+      const uriString = 'file:///' + cleanKey; // 拼成3斜杠
+      const fileUri = monaco.Uri.parse(uriString);
+
+      let iTextModel = monaco.editor.getModel(fileUri);
       if(!iTextModel){
-        iTextModel = monaco.editor.createModel(this.item.content, editorConf.language, Uri.parse(this.item.key));
+        iTextModel = monaco.editor.createModel(this.item.content, editorConf.language, fileUri);
       }else{
         iTextModel.setValue(this.item.content);
       }
       this.editor.setModel(iTextModel);
       this.loadFileContent(editorConf);
+
 
       // 监听编辑器内容变化
       this.editor.onDidChangeModelContent(e => {

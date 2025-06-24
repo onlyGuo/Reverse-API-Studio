@@ -14,11 +14,7 @@ public class ModuleContainer {
 
     private static final Map<String, EndpointContainer> endpointContainers = new HashMap<>();
 
-    static {
-        initialize();
-    }
-
-    private static void initialize() {
+    public static void initialize() {
         endpointContainers.forEach((key, value) -> {
             value.unload();
         });

@@ -1,6 +1,7 @@
 import {reactive} from "vue";
 import * as monaco from "monaco-editor";
 import Axios from "axios";
+import {Uri} from "monaco-editor";
 
 const $editor = reactive({
     options: {
@@ -9,17 +10,34 @@ const $editor = reactive({
         running: 'stop',
         projectId: '0'
     },
-    setExtraLib: function (moduleName, projectId) {
+    setExtraLib: function (moduleName, projectId, filename) {
         // 默认都要加载的约束
         // const defaultLib = ['java.rt.core.d.ts', 'java.db.core.d.ts']
         const defaultLib = ['java.db.core.d.ts']
         monaco.languages.typescript.javascriptDefaults.setExtraLibs([])
         this.addExtraLib(defaultLib);
-        if (moduleName) {
-            Axios.get(`/api/v1/project/module-dts/${moduleName}?projectId=${projectId}`).then(res => {
-                monaco.languages.typescript.javascriptDefaults.addExtraLib(res,
-                    'ts:filename/core-' + moduleName + '.d.ts');
-            })
+        // if (moduleName) {
+        //     Axios.get(`/api/v1/project/module-dts/${moduleName}?projectId=${projectId}`).then(res => {
+        //         monaco.languages.typescript.javascriptDefaults.addExtraLib(res,
+        //             'ts:filename/core-' + moduleName + '.d.ts');
+        //     })
+        // }
+        if (filename){
+            // const cleanKey = filename.replace(/^\/+/, '');
+            // const uriString = 'file:///' + cleanKey;
+            // monaco.languages.typescript.javascriptDefaults.addExtraLib(`
+            // declare interface ModelApi {
+            //     model: string;
+            //     path: string;
+            //     widget: number;
+            //     service: (messages: Message[], option: ModelOption) => any;
+            // }
+            // declare module "${uriString}" {
+            //     const value: ModelApi;
+            //     export default value;
+            // }
+            // `,
+            //     'ts:filename/api-' + cleanKey + '.d.ts');
         }
     },
     /**
@@ -339,7 +357,7 @@ const $editor = reactive({
         }
         if(/([a-z]|[A-Z])+\/apis\/.+/ig.test(file.key.replace("//", ''))){
             // 设置Model和Dao的提示
-            this.setExtraLib(moduleName, this.options.projectId);
+            this.setExtraLib(moduleName, this.options.projectId, file.key);
             return;
         }
 

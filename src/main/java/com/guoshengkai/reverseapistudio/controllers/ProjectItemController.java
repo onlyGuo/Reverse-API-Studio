@@ -1,6 +1,7 @@
 package com.guoshengkai.reverseapistudio.controllers;
 
 import com.guoshengkai.reverseapistudio.Common;
+import com.guoshengkai.reverseapistudio.core.ModuleContainer;
 import com.guoshengkai.reverseapistudio.entitys.FileItem;
 import com.guoshengkai.reverseapistudio.entitys.models.ModelEntity;
 import com.guoshengkai.reverseapistudio.exception.ValidationException;
@@ -104,14 +105,14 @@ public class ProjectItemController {
                  * @author <Enter your name>
                  * @date <Enter date>
                  */
-                export default {
+                export default new ApiEndpoint({
                     model: '<Enter your model name>',
                     path: 'v1/chat/completions',
                     widget: 1,
-                    service(messages: Message[], option: ModelOption) {\s
+                    service: (messages, option) => {\s
                 
                     }
-                }
+                })
                 """);
         fileInfo.setContent(fileInfo.getContent().replace("<Enter date>", DateUtil.formatAll()));
         if (StringUtils.hasText(fileInfo.getModel())){
@@ -141,6 +142,10 @@ public class ProjectItemController {
         }
         FileUtil.writeFile(fileInfo.getContent().getBytes(StandardCharsets.UTF_8), file);
         fileInfo.setType("file");
+        if (fileInfo.getKey().contains("/apis/") && fileInfo.getName().endsWith(".mjs")) {
+            String moduleName = fileInfo.getKey().substring(2).split("/apis/")[0];
+            ModuleContainer.getEndpointContainer(moduleName).loadFile(file);
+        }
         return fileInfo;
     }
 

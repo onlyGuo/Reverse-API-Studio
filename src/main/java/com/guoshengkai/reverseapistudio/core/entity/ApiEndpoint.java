@@ -19,8 +19,27 @@ public class ApiEndpoint {
     private int widget;
 
     /**
+     * 端点的模型名称
+     */
+    private String model;
+
+    /**
+     * 端点的请求路径
+     */
+    private String path;
+
+    /**
      * 端点的唯一标识符
      */
     private String key;
 
+    @Override
+    public String toString() {
+        return "ApiEndpoint{" +
+                "widget=" + widget +
+                ", path='" + path + '\'' +
+                ", model='" + model + '\'' +
+                ", key='" + key + '\'' +
+                '}';
+    }
 }
