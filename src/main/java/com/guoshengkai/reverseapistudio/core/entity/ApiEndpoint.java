@@ -1,5 +1,6 @@
 package com.guoshengkai.reverseapistudio.core.entity;
 
+import com.guoshengkai.reverseapistudio.utils.script.Storage;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -11,7 +12,7 @@ import lombok.Setter;
  */
 @Getter
 @Setter
-public class ApiEndpoint {
+public class ApiEndpoint implements AutoCloseable {
 
     /**
      * 权重
@@ -32,6 +33,16 @@ public class ApiEndpoint {
      * 端点的唯一标识符
      */
     private String key;
+
+    /**
+     * 存储对象，用于存储端点相关的数据
+     */
+    private Storage storage;
+
+    @Override
+    public void close() {
+        storage.close();
+    }
 
     @Override
     public String toString() {

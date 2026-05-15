@@ -1,0 +1,1 @@
+const t={key:"new-folder",name:"新建文件夹",keymap:"",param:{},onClick(r,d,e,o){console.log(r,d,e,o.$editor),o.$editor.prompt("新建文件夹","请输入文件夹名称",l=>{l&&o.$http.post("/api/v1/project/folder?projectId="+o.$editor.options.projectId,{name:l,key:e.key+"/"+l}).then(p=>{p.level=e.level+1,e.child.push(p)})},"new-folder")}};export{t as default};

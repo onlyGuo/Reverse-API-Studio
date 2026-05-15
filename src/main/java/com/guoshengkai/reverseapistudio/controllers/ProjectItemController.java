@@ -1,6 +1,7 @@
 package com.guoshengkai.reverseapistudio.controllers;
 
 import com.guoshengkai.reverseapistudio.Common;
+import com.guoshengkai.reverseapistudio.core.EndpointContainer;
 import com.guoshengkai.reverseapistudio.core.ModuleContainer;
 import com.guoshengkai.reverseapistudio.entitys.FileItem;
 import com.guoshengkai.reverseapistudio.entitys.models.ModelEntity;
@@ -60,11 +61,20 @@ public class ProjectItemController {
         file.setWritable(true);
         file.setReadable(true);
         file.setLastModified(System.currentTimeMillis());
+        String moduleName = fileInfo.getKey().replace("//", "");
+        moduleName = moduleName.substring(0, moduleName.indexOf('/'));
         if (file.getName().toLowerCase().endsWith(".mds")){
             ModelEntity entity = FileUtil.parseMds(fileInfo.getContent());
-            String moduleName = fileInfo.getKey().replace("//", "");
-            moduleName = moduleName.substring(0, moduleName.indexOf('/'));
 //            modelContainer.putModel(moduleName, entity.getName(), entity, projectId);
+        }
+        if (fileInfo.getKey().contains("/apis/") && file.getName().endsWith(".mjs")) {
+            EndpointContainer endpointContainer = ModuleContainer.getEndpointContainer(moduleName);
+            if (endpointContainer != null) {
+                endpointContainer.loadFile(file);
+            }
+        }
+        if (fileInfo.getKey().equals("//" + moduleName + "/config.js")){
+            ModuleContainer.getEndpointContainer(moduleName).reinitSocks5();
         }
     }
 
@@ -72,6 +82,14 @@ public class ProjectItemController {
     public void delete(String path, String projectId) {
         File file = new File(new File(Common.STORE_PATH, projectId), path);
         FileUtil.rm(file);
+        if (path.contains("/apis/") && path.endsWith(".mjs")) {
+            String moduleName = path.replace("//", "");
+            moduleName = moduleName.substring(0, moduleName.indexOf('/'));
+            EndpointContainer endpointContainer = ModuleContainer.getEndpointContainer(moduleName);
+            if (endpointContainer != null) {
+                endpointContainer.unloadEndpoint(path);
+            }
+        }
     }
 
     @PostMapping("rename")

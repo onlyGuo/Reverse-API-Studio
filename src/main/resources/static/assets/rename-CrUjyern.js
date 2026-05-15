@@ -1,0 +1,1 @@
+const s={key:"rename",name:"重命名",keymap:"",onClick(a,k,e,p){p.$editor.prompt("重命名","请输入新名称",r=>{r&&p.$http.post("/api/v1/project/rename?projectId="+p.$editor.options.projectId,{name:r,key:e.key}).then(y=>{e.name=r,e.key=e.key.substr(0,e.key.lastIndexOf("/")+1)+r})},"rename-"+e.key,e.name)}};export{s as default};

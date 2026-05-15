@@ -1,0 +1,1 @@
+const t={key:"new-model",name:"新建模型",keymap:"",onClick(d,i,e,o){o.$editor.prompt("新建模型","请输入模型名称",l=>{l&&o.$http.post("/api/v1/project/model?projectId="+o.$editor.options.projectId,{name:l,key:e.key}).then(p=>{p.level=e.level+1,e.child.push(p),o.$editor.openFile(p)})},"new-vue-"+e.key)}};export{t as default};

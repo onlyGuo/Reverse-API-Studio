@@ -7,7 +7,9 @@ import com.guoshengkai.reverseapistudio.Common;
 import com.guoshengkai.reverseapistudio.core.EndpointContainer;
 import com.guoshengkai.reverseapistudio.core.ModuleContainer;
 import com.guoshengkai.reverseapistudio.core.entity.ApiEndpoint;
+import com.guoshengkai.reverseapistudio.entitys.ResultBean;
 import com.guoshengkai.reverseapistudio.utils.ScriptUtil;
+import com.guoshengkai.reverseapistudio.utils.script.SSE;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -17,12 +19,11 @@ import org.graalvm.polyglot.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
 
 import java.io.File;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * ApiRequestController 用于处理所有未被其他控制器处理的请求。
@@ -57,10 +58,11 @@ public class ApiRequestController {
         if (endpoints == null || endpoints.isEmpty()) {
             response.setStatus(HttpServletResponse.SC_NOT_FOUND);
             response.setCharacterEncoding("UTF-8");
-            response.setContentType("application/json");
+            response.setContentType("application/json;charset=UTF-8");
             // 内部错误, 在uri中, 未找到model端点
             String errorMessage = String.format("No endpoint found for path: %s with model: %s", uri, model);
-            response.getWriter().write("{\"error\": \"%s\"}".formatted(errorMessage));
+            response.getWriter().write(JSON.toJSONString(ResultBean.error(errorMessage)
+                    .setCode(HttpServletResponse.SC_NOT_FOUND)));
             return;
         }
         // 根据权重随机选择一个端点, 权重越高, 被选中的概率越大
@@ -76,36 +78,71 @@ public class ApiRequestController {
         ApiEndpoint endpoint = weightedEndpoints.get((int) (Math.random() * weightedEndpoints.size()));
 
         log.info("Request: {}", endpoint);
-
+        response.setContentType("text/event-stream");
+        response.setCharacterEncoding("UTF-8");
+        response.setHeader("Cache-Control", "no-cache");
+        response.setHeader("Connection", "keep-alive");
+        response.setHeader("Access-Control-Allow-Origin", "*");
+        response.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PUT");
+        response.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With");
+        response.setHeader("Access-Control-Allow-Credentials", "true");
+        PrintWriter writer = response.getWriter();
         File rootDir = new File(Common.STORE_PATH, "0");
         JSONArray messages = body.getJSONArray("messages");
         body.remove("messages");
         body.put("stream", body.getOrDefault("stream", false));
-        ScriptUtil.execute(new File(rootDir, endpoint.getKey()), (js, args) -> {
-            Value json = js.getContext().eval("js", "JSON;");
-            Value jsonParse = json.getMember("parse");
-            Value jsMessages = jsonParse.execute(messages.toJSONString());
-            Value jsBody = jsonParse.execute(body.toJSONString());
-            Value value = js.getMember("default").getMember("service").execute(jsMessages, jsBody);
-            if (value != null) {
-                if (value.isHostObject()) {
-                    return value.asHostObject();
-                } else if (value.isString()) {
-                    return value.asString();
-                } else if (value.isNumber()) {
-                    return value.asDouble();
-                } else if (value.isBoolean()) {
-                    return value.asBoolean();
-                } else if (value.hasArrayElements()) {
-                    return JSON.parseArray(value.toString(), Object.class);
-                }else if (value.hasMembers()) {
-                    return JSON.parseObject(value.toString());
-                } else {
-                    return value;
+        try {
+            Object execute = ScriptUtil.execute(new File(rootDir, endpoint.getKey()), (js, args) -> {
+                Value json = js.getContext().eval("js", "JSON;");
+                Value jsonParse = json.getMember("parse");
+                Value jsMessages = jsonParse.execute(messages.toJSONString());
+                Value jsBody = jsonParse.execute(body.toJSONString());
+                js.getContext().getBindings("js").putMember("SSE", new SSE(writer, model));
+                js.getContext().getBindings("js").putMember("EndpointStorage", endpoint.getStorage());
+                Value value = js.getMember("default").getMember("service").execute(jsMessages, jsBody);
+                if (value != null) {
+                    if (value.isHostObject()) {
+                        return value.asHostObject();
+                    } else if (value.isString()) {
+                        return value.asString();
+                    } else if (value.isNumber()) {
+                        return value.asDouble();
+                    } else if (value.isBoolean()) {
+                        return value.asBoolean();
+                    } else if (value.hasArrayElements()) {
+                        Value toJson = js.getContext().eval("js",
+                                "const __TO_JSON__ = (obj) => JSON.stringify(obj, null, 2); __TO_JSON__");
+                        return JSON.parseArray(toJson.execute(value).asString());
+                    } else if (value.hasMembers()) {
+                        Value toJson = js.getContext().eval("js",
+                                "const __TO_JSON__ = (obj) => JSON.stringify(obj, null, 2); __TO_JSON__");
+                        return JSON.parseObject(toJson.execute(value).asString());
+                    }else if (value.isNull()){
+                        return null;
+                    }else {
+                        Value toJson = js.getContext().eval("js",
+                                "const __TO_JSON__ = (obj) => JSON.stringify(obj, null, 2); __TO_JSON__");
+                        return JSON.parseObject(toJson.execute(value).asString());
+                    }
                 }
+                return null;
+            });
+            if (execute != null) {
+                response.setContentType("application/json;charset=UTF-8");
+                response.setStatus(HttpServletResponse.SC_OK);
+                writer.write(JSON.toJSONString(execute));
             }
-            return null;
-        });
+        }catch (Exception e){
+            String errorMessage = e.getMessage();
+            log.error(errorMessage, e);
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            response.setCharacterEncoding("UTF-8");
+            response.setContentType("application/json;charset=UTF-8");
+            writer.write(JSON.toJSONString(ResultBean.error(errorMessage)
+                    .setCode(HttpServletResponse.SC_INTERNAL_SERVER_ERROR)));
+        }
+
+
     }
 
 }

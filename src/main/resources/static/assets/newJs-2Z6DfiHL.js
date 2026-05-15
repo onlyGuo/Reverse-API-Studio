@@ -1,0 +1,1 @@
+const s={key:"new-js",name:"新建JavaScript",keymap:"",onClick(t,l,e,p){p.$editor.prompt("新建Js","请输入文件名称",o=>{o&&p.$http.post("/api/v1/project/jsFile?projectId="+p.$editor.options.projectId,{name:o,key:e.key}).then(i=>{i.level=e.level+1,e.child.push(i),p.$editor.openFile(i)})},"new-js"+e.key)}};export{s as default};

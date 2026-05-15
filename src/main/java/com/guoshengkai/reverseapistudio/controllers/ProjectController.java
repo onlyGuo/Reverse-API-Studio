@@ -104,9 +104,9 @@ public class ProjectController {
         }
         file.mkdirs();
         new File(file, "apis").mkdirs();
-        new File(file, "assets").mkdirs();
-        new File(file, "models").mkdirs();
-        new File(file, "views").mkdirs();
+//        new File(file, "assets").mkdirs();
+//        new File(file, "models").mkdirs();
+//        new File(file, "views").mkdirs();
 
         FileUtil.writeFile("""
                 export default {
@@ -115,7 +115,18 @@ public class ProjectController {
                     version: '1.0.0',
                     routers: [
                     
-                    ]
+                    ],
+                    socks: {
+                        port: 1080,
+                        enable: false,
+                        auth: [
+                            {
+                                username: '',
+                                password: '',
+                                enable: false
+                            },
+                        ]
+                    }
                 }
                 """.formatted(moduleName).getBytes(StandardCharsets.UTF_8), new File(file, "config.js"));
 
@@ -124,9 +135,7 @@ public class ProjectController {
                ```
                - modules
                    |- apis         // 存放对外发布的API以及各种业务和逻辑
-                   |- assets       // 存放静态文件(在本项目中暂时弃用)
-                   |- models       // 存放业务模型文件(在本项目中暂时弃用)
-                   |- views        // 存放业务文件(在本项目中暂时弃用)
+                   |- socks        // 存放Socks5代理服务的配置页面
                ```
 
                ## API文件说明
@@ -144,7 +153,6 @@ public class ProjectController {
                }
                ```
                """.getBytes(StandardCharsets.UTF_8), new File(file, "README.md"));
-
         file.setWritable(true);
         file.setReadable(true);
         file.setLastModified(System.currentTimeMillis());

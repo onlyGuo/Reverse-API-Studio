@@ -1,10 +1,13 @@
 package com.guoshengkai.reverseapistudio.utils;
 
 
+import com.guoshengkai.reverseapistudio.utils.script.HTTP;
 import com.guoshengkai.reverseapistudio.utils.script.console;
 import com.guoshengkai.reverseapistudio.utils.script.Util;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.HostAccess;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
 
@@ -18,6 +21,7 @@ import java.util.*;
  *
  * @author gsk
  */
+@Slf4j
 public class ScriptUtil {
 
     /**
@@ -33,7 +37,7 @@ public class ScriptUtil {
     );
 
     private static final List<Class<?>> STATIC_CLASSES = Arrays.asList(
-            Util.class, DateUtil.class, console.class
+            Util.class, DateUtil.class, console.class, HTTP.class
     );
 
     public static Object execute(String script, Object... params){
@@ -76,6 +80,7 @@ public class ScriptUtil {
                 context.getBindings("js").putMember(clazz.getSimpleName(),
                         context.eval("js", "Java.type('" + clazz.getName() + "')"));
             });
+            ThreadUtil.setCacheData("__CURRENT_CONTEXT__", context);
             Source js = Source.newBuilder("js", """
                     export class ApiEndpoint {
                         constructor(attr) {

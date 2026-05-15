@@ -1,0 +1,1 @@
+const d={key:"new-vue",name:"新建Vue文件",keymap:"",onClick(t,l,e,p){p.$editor.prompt("新建Vue文件","请输入文件名称",i=>{i&&p.$http.post("/api/v1/project/vue?projectId="+p.$editor.options.projectId,{name:i,key:e.key}).then(o=>{o.level=e.level+1,e.child.push(o),p.$editor.openFile(o)})},"new-vue-"+e.key)}};export{d as default};
